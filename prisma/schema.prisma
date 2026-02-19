@@ -1,0 +1,89 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String?
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  stocks        UserStock[]
+  emailSettings EmailSettings?
+}
+
+model Stock {
+  id     String @id @default(cuid())
+  symbol String @unique
+  name   String
+  market String @default("US")
+
+  users UserStock[]
+  news  StockNews[]
+}
+
+model UserStock {
+  id        String   @id @default(cuid())
+  userId    String
+  stockId   String
+  createdAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stock Stock @relation(fields: [stockId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, stockId])
+}
+
+model StockNews {
+  id          String   @id @default(cuid())
+  stockId     String
+  title       String
+  summary     String
+  url         String
+  source      String
+  imageUrl    String?
+  publishedAt DateTime
+  fetchedAt   DateTime @default(now())
+
+  stock    Stock        @relation(fields: [stockId], references: [id], onDelete: Cascade)
+  analysis NewsAnalysis?
+}
+
+model NewsAnalysis {
+  id             String   @id @default(cuid())
+  newsId         String   @unique
+  sentiment      String
+  impact         String
+  keyPoints      String
+  investorAction String
+  confidence     Float
+  createdAt      DateTime @default(now())
+
+  news StockNews @relation(fields: [newsId], references: [id], onDelete: Cascade)
+}
+
+model EmailSettings {
+  id       String  @id @default(cuid())
+  userId   String  @unique
+  enabled  Boolean @default(true)
+  sendTime String  @default("08:00")
+  timezone String  @default("Asia/Seoul")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model EmailLog {
+  id      String   @id @default(cuid())
+  userId  String
+  subject String
+  status  String
+  sentAt  DateTime @default(now())
+  error   String?
+}
